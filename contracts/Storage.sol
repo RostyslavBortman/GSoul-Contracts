@@ -5,76 +5,102 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract Storage is Ownable {
+    enum TransferType {
+        UPVOTE,
+        DOWNVOTE
+    }
+
+    struct Relationship {
+        int256 karmaAmount; // if bigger than 0 - user mostly upvoted him
+        int256 relationshipRating; // more upvotes - more bounds
+    }
+
+    struct User {
+        bool isInitialized;
+        uint256 userId;
+        int256 karma; // should be between +10 and -10
+        mapping(address => Relationship) outgoing;
+        mapping(address => Relationship) ingoing;
+    }
+
     // conect library
     using Counters for Counters.Counter;
     Counters.Counter public contractIdTracker;
     // storages
-    mapping(address => bool) public sBTInUser; //contract address => user address => true/false
+    mapping(address => bool) public hasSBT;
     mapping(address => User) public users;
 
-    modifier hasSBT() {
-        require(sBTInUser[msg.sender] == true, "you don`t have SBT token");
+    modifier isSoulbounded() {
+        require(hasSBT[msg.sender], "Storage: User is not soulbounded");
         _;
     }
 
-    struct SendedPoint {
-        address to;
-        uint256 amount;
+    function createUser() external isSoulbounded {
+        User storage user = users[msg.sender];
+        require(!user.isInitialized, "Storage: User has been initialized");
+        user.isInitialized = true;
+        user.karma = 100; // + 100
     }
-
-    struct User {
-        address userAddress;
-        uint256 userId;
-        uint256 weight;
-        uint256 karma;
-        SendedPoint[] sendedKarma;
-        SendedPoint[] sendedPoint;
-    }
-    SendedPoint[] private sendedPoint;
 
     // Karma send logic
-    function sendKarma(address useraddress, uint256 karmaAmount) public hasSBT {
-        require(
-            karmaAmount <= users[msg.sender].weight,
-            "You don`t have enought karma"
-        );
-        require(
-            users[msg.sender].weight > 0,
-            "You weight is to low to send karma"
-        );
-        users[msg.sender].sendedKarma.push(
-            SendedPoint(useraddress, karmaAmount)
-        );
-        users[useraddress].karma += karmaAmount;
-        // TO DO!!! change formula
-        users[msg.sender].weight = users[msg.sender].weight - karmaAmount;
+    function sendKarma(
+        address to,
+        uint256 u_amount,
+        TransferType transfer
+    ) external isSoulbounded {
+        User storage user = users[msg.sender];
+        require(u_amount > 0, "");
+        //todo: check before converting
+        int256 amount = int256(u_amount); 
+        require(user.karma >= amount, "Storage: Insufficient karma");
+
+        if (transfer == TransferType.UPVOTE) {
+            _upvote(user, to, amount);
+        } else {
+            _downvote(user, to, amount);
+        }
     }
 
-    // weight send logic
-    function sendPoint(address useraddress, uint256 weight) public hasSBT {
-        require(weight <= users[msg.sender].weight, "You weight is to low");
-        users[msg.sender].sendedPoint.push(SendedPoint(useraddress, weight));
-        users[useraddress].weight += weight;
+    function _upvote(
+        User storage user,
+        address to,
+        int256 amount
+    ) internal {
+        User storage receiver = users[to];
+
+        user.karma -= amount;
+
+        (int256 karma, int256 rating) = _calculateTransfer(user.karma, receiver.karma);
+
+        // unchecked {
+        //     user.outgoing[to] =
+        //     receiver.ingoing[msg.sender] =
+        //     user.karmaUpvotes[to] = user.karmaUpvotes[to] + amount;
+        //     receiver.karma += amount;
+        // }
     }
 
-    // get user Info
-    function getUserInfo(address user)
-        public
-        view
-        returns (User memory userInfo)
+    function _downvote(
+        User storage user,
+        address to,
+        int256 amount
+    ) internal {
+        User storage receiver = users[to];
+
+        user.karma -= amount;
+
+      
+    }
+
+    function _calculateTransfer(int256 senderKarma, int256 receiverKarma)
+        internal
+        returns (int256 karma, int256 rating)
     {
-        return users[user];
-    }
-
-    function createUser() public hasSBT {
-        sendedPoint.push(SendedPoint(msg.sender, 0));
-        users[msg.sender] = User(
-            msg.sender,
-            contractIdTracker.current(),
-            100,
-            100,
-            sendedPoint,
-            sendedPoint
-        );
+        (int256 biggestKarma, int256 smallestKarma) = (senderKarma >
+            receiverKarma)
+            ? (senderKarma, receiverKarma)
+            : (receiverKarma, senderKarma);
+        int256 difference = biggestKarma - smallestKarma;
+        //todo: deliver math
     }
 }
