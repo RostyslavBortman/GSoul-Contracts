@@ -3,18 +3,31 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-contract Soulbound {
+contract Soulbound is EIP712 {
     using Strings for uint256;
 
-    // Address that has can issue a soulbound
-    address issuer;
+    address verifier;
 
     string public name = "Karma Token";
     string public symbol = "KT";
-    
 
     string public baseURI;
+
+    struct MintParams {
+        address verifier;
+        address to;
+        uint256 tokenId;
+        uint256 nonce;
+    }
+
+    bytes32 private constant MINT_TYPEHASH =
+        keccak256(
+            "Mint(address verifier,address to,uint256 tokenId,uint256 nonce)"
+        );
+
+    uint256 public nonce; 
 
     // Mapping from token ID to owner address
     mapping(uint256 => address) private owners;
@@ -31,30 +44,41 @@ contract Soulbound {
         require(_exists(tokenId), "KT: Token does not exist.");
         _;
     }
-    // Checks if call is being performed by an issuer
-    modifier onlyIssuer() {
-        require(msg.sender == issuer, "KT: Sender is not issuer.");
-        _;
-    }
 
-    constructor(address _issuer, string memory _baseURI) {
-        issuer = _issuer;
+    constructor(address _verifier, string memory _baseURI) EIP712(name, "1") {
+        verifier = _verifier;
         baseURI = _baseURI;
     }
 
-    function mint(address to, uint256 tokenId) external onlyIssuer {
-        require(to != address(0), "KT: mint to the zero address");
-        require(!_exists(tokenId), "KT: token already minted");
+    function mint(MintParams calldata params, bytes calldata signature) external {
+        require(params.nonce == nonce, "KT: invalid nonce");
+        require(params.to != address(0), "KT: mint to the zero address");
+        require(!_exists(params.tokenId), "KT: token already minted");
+        require(balances[params.to] == 0, "KT: Can have only one token.");
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                MINT_TYPEHASH,
+                params.verifier,
+                params.to,
+                params.tokenId,
+                params.nonce
+            )
+        );
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(hash, signature);
+        require(signer == verifier, "KT: Signer is not verifier");
 
         unchecked {
-            balances[to] += 1;
+            balances[params.to] += 1;
         }
 
-        owners[tokenId] = to;
-        emit Minted(to, tokenId);
+        owners[params.tokenId] = params.to;
+        nonce++;
+        emit Minted(params.to, params.tokenId);
     }
 
-    function burn(uint256 tokenId) external onlyIssuer tokenExists(tokenId) {
+    function burn(uint256 tokenId) external tokenExists(tokenId) {
         address owner = _ownerOf(tokenId);
         balances[owner] -= 1;
         delete owners[tokenId];
@@ -88,7 +112,6 @@ contract Soulbound {
                 ? string(abi.encodePacked(_baseURI, tokenId.toString()))
                 : "";
     }
-
 
     function _ownerOf(uint256 tokenId) internal view virtual returns (address) {
         return owners[tokenId];
