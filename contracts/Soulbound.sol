@@ -18,16 +18,16 @@ contract Soulbound is EIP712 {
     struct MintParams {
         address verifier;
         address to;
-        uint256 tokenId;
         uint256 nonce;
     }
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256(
-            "Mint(address verifier,address to,uint256 tokenId,uint256 nonce)"
+            "Mint(address verifier,address to,uint256 nonce)"
         );
 
-    uint256 public nonce; 
+    mapping(address => uint256) nonces; 
+    uint256 public currentTokenId;
 
     // Mapping from token ID to owner address
     mapping(uint256 => address) private owners;
@@ -51,9 +51,8 @@ contract Soulbound is EIP712 {
     }
 
     function mint(MintParams calldata params, bytes calldata signature) external {
-        require(params.nonce == nonce, "KT: invalid nonce");
+        require(params.nonce == nonces[msg.sender], "KT: invalid nonce");
         require(params.to != address(0), "KT: mint to the zero address");
-        require(!_exists(params.tokenId), "KT: token already minted");
         require(balances[params.to] == 0, "KT: Can have only one token.");
 
         bytes32 structHash = keccak256(
@@ -61,7 +60,6 @@ contract Soulbound is EIP712 {
                 MINT_TYPEHASH,
                 params.verifier,
                 params.to,
-                params.tokenId,
                 params.nonce
             )
         );
@@ -73,9 +71,8 @@ contract Soulbound is EIP712 {
             balances[params.to] += 1;
         }
 
-        owners[params.tokenId] = params.to;
-        nonce++;
-        emit Minted(params.to, params.tokenId);
+        nonces[msg.sender]++;
+        emit Minted(params.to, nonces[msg.sender]);
     }
 
     function burn(uint256 tokenId) external tokenExists(tokenId) {

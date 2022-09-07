@@ -6,7 +6,6 @@ import { Message } from "./types";
 describe("Soulbound", function () {
   async function treasuryFixture() {
     const nonce = 0;
-    const tokenId = 2;
 
     const [verifier, to] = await ethers.getSigners();
     const { address: verifierAddress } = verifier;
@@ -20,7 +19,6 @@ describe("Soulbound", function () {
       nonce,
       verifier: verifierAddress,
       to: toAddress,
-      tokenId,
     };
 
     const signature = await prepareSignatureTest(
@@ -29,7 +27,7 @@ describe("Soulbound", function () {
       soulboundAddress
     );
 
-    return { to, tokenId, soulbound, params, signature };
+    return { to, soulbound, params, signature };
   }
 
   describe("Soulbound", async () => {

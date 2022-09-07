@@ -8,7 +8,6 @@ import {
 const MintType = [
     { name: 'verifier', type: 'address' },
     { name: 'to', type: 'address' },
-    { name: 'tokenId', type: 'uint256' },
     { name: 'nonce', type: 'uint256' },
 ];
 
@@ -22,7 +21,6 @@ const EIP712DomainType = [
 export interface Message {
     verifier: string;
     to: string;
-    tokenId: BigNumberish;
     nonce: BigNumberish;
 
 }
@@ -43,7 +41,7 @@ export function buildMessageTest(
     chainId: number,
     verifyingContract: string,
 ) {
-    const { verifier, to, tokenId, nonce } = rawMessage;
+    const { verifier, to, nonce } = rawMessage;
     return {
         domain: {
             chainId,
@@ -52,7 +50,7 @@ export function buildMessageTest(
             version: '1'
         },
         message: {
-            verifier, to, tokenId, nonce
+            verifier, to, nonce
         },
         primaryType: 'Mint',
         types: {
