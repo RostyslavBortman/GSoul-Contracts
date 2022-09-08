@@ -26,13 +26,16 @@ contract Soulbound is EIP712, ISBT {
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address verifier,address to,uint256 nonce,string uri)");
 
-    mapping(address => uint256) nonces;
-    uint256 public currentTokenId = 1;
-
     // Mapping from token ID to owner address
     mapping(uint256 => address) private owners;
     // Mapping from owner address to his token
     mapping(address => uint256) private tokens;
+    // Mapping from token to its URI
+    mapping(uint256 => string) private tokenUris;
+    // Keeping track of nonces of every user
+    mapping(address => uint256) nonces;
+    // Track ID
+    uint256 public currentTokenId = 1;
 
     // Emitted when a soulbound is issued to a soul
     event Minted(address indexed to, uint256 indexed tokenId);
@@ -49,7 +52,7 @@ contract Soulbound is EIP712, ISBT {
 
     modifier onlyVerifier() {
         require(msg.sender == verifier, "SBT: Sender is not verifier");
-        _; 
+        _;
     }
 
     constructor(address _verifier, string memory _baseURI) EIP712(name, "1") {
@@ -66,9 +69,9 @@ contract Soulbound is EIP712, ISBT {
 
         bytes32 structHash = keccak256(
             abi.encode(
-                MINT_TYPEHASH, 
-                params.verifier, 
-                params.to, 
+                MINT_TYPEHASH,
+                params.verifier,
+                params.to,
                 params.nonce,
                 keccak256(abi.encodePacked(params.uri))
             )
@@ -77,13 +80,19 @@ contract Soulbound is EIP712, ISBT {
         address signer = ECDSA.recover(hash, signature);
         require(signer == verifier, "SBT: Signer is not verifier");
 
-        tokens[params.to] = currentTokenId;
+        uint256 id = currentTokenId;
+        tokens[params.to] = id;
+        tokenUris[id] = params.uri;
 
-        emit Minted(params.to, nonces[msg.sender]);
+        unchecked {
+            currentTokenId++;
+        }
+
+        emit Minted(params.to, id);
     }
 
     function burn() external {
-        address owner = msg.sender; 
+        address owner = msg.sender;
         uint256 tokenId = tokens[owner];
         _burn(owner, tokenId);
         emit OwnerRevoke(owner, tokenId);
@@ -102,8 +111,8 @@ contract Soulbound is EIP712, ISBT {
 
     function ownerOf(uint256 tokenId)
         external
-        override
         view
+        override
         tokenExists(tokenId)
         returns (address)
     {
@@ -112,21 +121,19 @@ contract Soulbound is EIP712, ISBT {
 
     function tokenURI(uint256 tokenId)
         external
+        override
         view
         tokenExists(tokenId)
         returns (string memory)
     {
-        string memory _baseURI = baseURI;
-        return
-            bytes(_baseURI).length > 0
-                ? string(abi.encodePacked(_baseURI, tokenId.toString()))
-                : "";
+        return tokenUris[tokenId];
     }
 
-    function _burn( address owner, uint256 tokenId) internal {
+    function _burn(address owner, uint256 tokenId) internal {
         require(tokenId != 0, "SBT: Cannot burn empty");
         delete owners[tokenId];
         delete tokens[owner];
+        delete tokenUris[tokenId];
     }
 
     function _ownerOf(uint256 tokenId) internal view returns (address) {
