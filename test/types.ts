@@ -9,6 +9,7 @@ const MintType = [
     { name: 'verifier', type: 'address' },
     { name: 'to', type: 'address' },
     { name: 'nonce', type: 'uint256' },
+    { name: 'uri', type: 'string' }
 ];
 
 const EIP712DomainType = [
@@ -22,7 +23,7 @@ export interface Message {
     verifier: string;
     to: string;
     nonce: BigNumberish;
-
+    uri: string;
 }
 
 export interface SignerLike {
@@ -35,13 +36,12 @@ export interface SignerLike {
     ): Promise<string>;
 }
 
-
 export function buildMessageTest(
     rawMessage: Message,
     chainId: number,
     verifyingContract: string,
 ) {
-    const { verifier, to, nonce } = rawMessage;
+    const { verifier, to, nonce, uri } = rawMessage;
     return {
         domain: {
             chainId,
@@ -50,7 +50,7 @@ export function buildMessageTest(
             version: '1'
         },
         message: {
-            verifier, to, nonce
+            verifier, to, nonce, uri
         },
         primaryType: 'Mint',
         types: {

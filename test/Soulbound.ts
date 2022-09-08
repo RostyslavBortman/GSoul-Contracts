@@ -14,9 +14,11 @@ describe("Soulbound", function () {
     const mnemonics = "exhaust short galaxy address hire cage picture water motion hold bid profit";
     const wallet = ethers.Wallet.fromMnemonic(mnemonics);
     const privateKey = wallet.privateKey.slice(2);
+    console.log(privateKey);
 
     const [verifier, to] = await ethers.getSigners();
     const { address: verifierAddress } = verifier;
+    console.log(verifierAddress);
     const { address: toAddress } = to;
 
     const chainId = await verifier.getChainId();
@@ -29,6 +31,7 @@ describe("Soulbound", function () {
       nonce,
       verifier: verifierAddress,
       to: toAddress,
+      uri: "bruh"
     };
 
     const signature = await prepareSignatureTest(
@@ -44,24 +47,24 @@ describe("Soulbound", function () {
       soulboundAddress
     );
 
-    return { to, soulbound, params, signature, metamaskSignature };
+    return { to, toAddress, soulbound, params, signature, metamaskSignature };
   }
 
   describe("Soulbound", async () => {
     it("Should mint token", async () => {
-      const { to, soulbound, params, signature } = await treasuryFixture();
+      const { to, toAddress, soulbound, params, signature } = await treasuryFixture();
       await soulbound.connect(to).mint(params, signature);
 
-      const toBalance = await soulbound.balanceOf(to.address);
+      const toBalance = await soulbound.tokenOf(toAddress);
       expect(toBalance.toString()).to.equal("1");
     });
 
     it("Should mint token metamask", async () => {
-      const { to, soulbound, params, metamaskSignature } = await treasuryFixture();
+      const { to, toAddress, soulbound, params, metamaskSignature } = await treasuryFixture();
 
       await soulbound.connect(to).mint(params, metamaskSignature);
 
-      const toBalance = await soulbound.balanceOf(to.address);
+      const toBalance = await soulbound.tokenOf(toAddress);
       expect(toBalance.toString()).to.equal("1");
     });
 

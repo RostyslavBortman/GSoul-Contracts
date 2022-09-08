@@ -20,13 +20,14 @@ contract Soulbound is EIP712, ISBT {
         address verifier;
         address to;
         uint256 nonce;
+        string uri;
     }
 
     bytes32 private constant MINT_TYPEHASH =
-        keccak256("Mint(address verifier,address to,uint256 nonce)");
+        keccak256("Mint(address verifier,address to,uint256 nonce,string uri)");
 
     mapping(address => uint256) nonces;
-    uint256 public currentTokenId;
+    uint256 public currentTokenId = 1;
 
     // Mapping from token ID to owner address
     mapping(uint256 => address) private owners;
@@ -64,7 +65,13 @@ contract Soulbound is EIP712, ISBT {
         require(tokens[params.to] == 0, "SBT: Can have only one token.");
 
         bytes32 structHash = keccak256(
-            abi.encode(MINT_TYPEHASH, params.verifier, params.to, params.nonce)
+            abi.encode(
+                MINT_TYPEHASH, 
+                params.verifier, 
+                params.to, 
+                params.nonce,
+                keccak256(abi.encodePacked(params.uri))
+            )
         );
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, signature);
