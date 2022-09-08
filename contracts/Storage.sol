@@ -12,7 +12,7 @@ contract Storage is Ownable {
 
     struct Relationship {
         int256 karmaAmount; // if bigger than 0 - user mostly upvoted him
-        int256 relationshipRating; // more upvotes - more bounds
+        int16 relationshipRating; // more upvotes - more bounds
     }
 
     struct User {
@@ -36,7 +36,10 @@ contract Storage is Ownable {
 
     function confirmSBT(ISBT sbt) external {
         require(supportedContracts[sbt], "Storage: Contract not supported");
-        require(sbt.tokenOf(msg.sender) != 0, "Storage: User does not have a KYC");
+        require(
+            sbt.tokenOf(msg.sender) != 0,
+            "Storage: User does not have a KYC"
+        );
         hasSBT[msg.sender] = true;
     }
 
@@ -50,13 +53,14 @@ contract Storage is Ownable {
     // Karma send logic
     function sendKarma(
         address to,
-        uint256 u_amount,
+        int16 amount,
         TransferType transfer
     ) external isSoulbounded {
         User storage user = users[msg.sender];
-        require(u_amount > 0, "");
-        //todo: check before converting
-        int256 amount = int256(u_amount); 
+        require(
+            amount < 1000 && amount > -1000,
+            "Storage: Invalid karma value"
+        );
         require(user.karma >= amount, "Storage: Insufficient karma");
 
         if (transfer == TransferType.UPVOTE) {
@@ -69,43 +73,65 @@ contract Storage is Ownable {
     function _upvote(
         User storage user,
         address to,
-        int256 amount
+        int16 amount
     ) internal {
         User storage receiver = users[to];
-
+        (int256 transferKarma, int16 transferRating) = _calculateTransfer(
+            user.karma,
+            receiver.karma,
+            user.outgoing[to].karmaAmount,
+            user.outgoing[to].relationshipRating
+        );
         user.karma -= amount;
-
-        (int256 karma, int256 rating) = _calculateTransfer(user.karma, receiver.karma);
-
-        // unchecked {
-        //     user.outgoing[to] =
-        //     receiver.ingoing[msg.sender] =
-        //     user.karmaUpvotes[to] = user.karmaUpvotes[to] + amount;
-        //     receiver.karma += amount;
-        // }
+        unchecked {
+            receiver.karma += transferKarma;        
+        }
+        int16 relationshipRating = user.outgoing[to].relationshipRating + transferRating;
+        user.outgoing[to].relationshipRating = relationshipRating; 
+        receiver.ingoing[msg.sender].relationshipRating = relationshipRating;
     }
 
     function _downvote(
         User storage user,
         address to,
-        int256 amount
+        int16 amount
     ) internal {
         User storage receiver = users[to];
+          (int256 karma, int256 rating) = _calculateTransfer(
+            user.karma,
+            receiver.karma,
+            user.outgoing[to].karmaAmount,
+            user.outgoing[to].relationshipRating
+        );
 
         user.karma -= amount;
-
-      
     }
 
-    function _calculateTransfer(int256 senderKarma, int256 receiverKarma)
-        internal
-        returns (int256 karma, int256 rating)
-    {
+    function _calculateTransfer(
+        int256 senderKarma,
+        int256 receiverKarma,
+        int256 bonding,
+        int16 amount
+    ) internal pure returns (int256 karma, int16 rating) {
         (int256 biggestKarma, int256 smallestKarma) = (senderKarma >
             receiverKarma)
             ? (senderKarma, receiverKarma)
             : (receiverKarma, senderKarma);
         int256 difference = biggestKarma - smallestKarma;
-        //todo: deliver math
+        int256 weightedKarma = (bonding * amount) / difference;
+
+        if (weightedKarma > 5) {
+            weightedKarma = 5;
+        } else if (weightedKarma < 5) {
+            weightedKarma = -5; 
+        }
+        
+        if (senderKarma == biggestKarma) {
+            karma = amount - weightedKarma;
+        } else {
+            karma = amount + weightedKarma;
+        }
+
+        rating = amount / 10;
     }
 }
