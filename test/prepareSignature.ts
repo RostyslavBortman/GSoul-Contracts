@@ -1,6 +1,5 @@
 import { buildMessageMetamask, buildMessageTest, Message, SignerLike } from "./types";
 import { signTypedData, SignTypedDataVersion } from "@metamask/eth-sig-util";
-import { Wallet } from "ethers";
 
 export async function prepareSignatureTest(
     rawMessage: Message, 
@@ -18,17 +17,18 @@ export async function prepareSignatureTest(
 
 export async function prepareSignatureMetamask(
     rawMessage: Message, 
-    signer: Wallet, 
+    chainId: number,
+    privateKey: string,
     verifyingContract: string
 ) {
-    const chainId = await signer.getChainId();
     const params = buildMessageMetamask(
         rawMessage,
         chainId,
         verifyingContract
     );
+    const bufferFrom = Buffer.from(privateKey, "hex");
     const callParams = {
-        privateKey: Buffer.from(signer.privateKey),
+        privateKey: bufferFrom,
         data: params,
         version: SignTypedDataVersion.V4
     }
