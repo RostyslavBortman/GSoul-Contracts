@@ -43,6 +43,10 @@ contract Storage is Ownable {
         hasSBT[msg.sender] = true;
     }
 
+    function addSBT(ISBT sbt) external onlyOwner {
+        supportedContracts[sbt] = true;
+    }
+
     function createUser() external isSoulbounded {
         User storage user = users[msg.sender];
         require(!user.isInitialized, "Storage: User has been initialized");
@@ -50,7 +54,6 @@ contract Storage is Ownable {
         user.karma = 100; // + 100
     }
 
-    // Karma send logic
     function sendKarma(
         address to,
         int16 amount,
@@ -70,6 +73,11 @@ contract Storage is Ownable {
         }
     }
 
+    function getUserKarma(address user) external view returns (int256) {
+        require(user != address(0), "Storage: Invalid address");
+        return users[msg.sender].karma; 
+    }
+
     function _upvote(
         User storage user,
         address to,
@@ -79,8 +87,8 @@ contract Storage is Ownable {
         (int256 transferKarma, int16 transferRating) = _calculateTransfer(
             user.karma,
             receiver.karma,
-            user.outgoing[to].karmaAmount,
-            user.outgoing[to].relationshipRating
+            user.outgoing[to].relationshipRating,
+            amount
         );
         user.karma -= amount;
         unchecked {
@@ -100,8 +108,8 @@ contract Storage is Ownable {
           (int256 transferKarma, int16 transferRating) = _calculateTransfer(
             user.karma,
             receiver.karma,
-            user.outgoing[to].karmaAmount,
-            user.outgoing[to].relationshipRating
+            user.outgoing[to].relationshipRating,
+            amount
         );
 
         receiver.karma -= transferKarma;        
