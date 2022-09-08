@@ -97,14 +97,17 @@ contract Storage is Ownable {
         int16 amount
     ) internal {
         User storage receiver = users[to];
-          (int256 karma, int256 rating) = _calculateTransfer(
+          (int256 transferKarma, int16 transferRating) = _calculateTransfer(
             user.karma,
             receiver.karma,
             user.outgoing[to].karmaAmount,
             user.outgoing[to].relationshipRating
         );
 
-        user.karma -= amount;
+        receiver.karma -= transferKarma;        
+        int16 relationshipRating = user.outgoing[to].relationshipRating + transferRating;
+        user.outgoing[to].relationshipRating = relationshipRating; 
+        receiver.ingoing[msg.sender].relationshipRating = relationshipRating;
     }
 
     function _calculateTransfer(
