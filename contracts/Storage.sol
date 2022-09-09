@@ -34,20 +34,17 @@ contract Storage is Ownable {
         _;
     }
 
-    function confirmSBT(ISBT sbt) external {
+    function addSBT(ISBT sbt) external onlyOwner {
+        supportedContracts[sbt] = true;
+    }
+
+    function createUser(ISBT sbt) external {
         require(supportedContracts[sbt], "Storage: Contract not supported");
         require(
             sbt.tokenOf(msg.sender) != 0,
             "Storage: User does not have a KYC"
         );
         hasSBT[msg.sender] = true;
-    }
-
-    function addSBT(ISBT sbt) external onlyOwner {
-        supportedContracts[sbt] = true;
-    }
-
-    function createUser() external isSoulbounded {
         User storage user = users[msg.sender];
         require(!user.isInitialized, "Storage: User has been initialized");
         user.isInitialized = true;
