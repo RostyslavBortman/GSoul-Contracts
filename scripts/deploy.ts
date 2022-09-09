@@ -1,18 +1,23 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-  const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+  const verifierAddress = '0xa1e1fB25268cEfB55225dbE5fD63a3b44D35E6aA';
 
-  const lockedAmount = ethers.utils.parseEther("1");
+  const Soulbound = await ethers.getContractFactory("Soulbound");
+  const soulbound = await Soulbound.deploy(verifierAddress);
 
-  const Lock = await ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  await soulbound.deployed();
 
-  await lock.deployed();
+  console.log(`Soulbound deployed to ${soulbound.address}`);
 
-  console.log(`Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`);
+  const Storage = await ethers.getContractFactory("Storage");
+  const storage = await Storage.deploy();
+
+  await storage.deployed();
+
+  await storage.addSBT(soulbound.address);
+
+  console.log(`Storage deployed to ${storage.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

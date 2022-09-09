@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "deploy": "npx hardhat run --network goerli scripts/deploy.ts",
+    "verify:soulbound": "npx hardhat verify --network goerli 0xe6214fdfE72537874f4a66a293B44BB854F808da 0xa1e1fB25268cEfB55225dbE5fD63a3b44D35E6aA",
+    "verify:storage": "npx hardhat verify --network goerli 0xe42fE6F555Fcc319417258D8422971780b5E7fD0",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,6 +22,7 @@
   "homepage": "https://github.com/RostyslavBortman/GSoul-Contracts#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^1.0.1",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "hardhat": "^2.11.1"
   },
   "dependencies": {

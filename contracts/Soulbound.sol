@@ -4,9 +4,10 @@ pragma solidity 0.8.16;
 
 import "./ISBT.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-contract Soulbound is EIP712, ISBT {
+contract Soulbound is IERC721, EIP712, ISBT {
     using Strings for uint256;
 
     address private verifier;
@@ -109,7 +110,7 @@ contract Soulbound is EIP712, ISBT {
     function ownerOf(uint256 tokenId)
         external
         view
-        override
+        override (IERC721, ISBT)
         tokenExists(tokenId)
         returns (address)
     {
@@ -132,6 +133,42 @@ contract Soulbound is EIP712, ISBT {
         delete tokens[owner];
         delete tokenUris[tokenId];
     }
+
+    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+
+    }
+
+    function balanceOf(address owner) external view returns (uint256 balance) {
+
+    }
+
+    function safeTransferFrom(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external { revert("Unsupported"); }
+
+    function safeTransferFrom(
+        address,
+        address,
+        uint256
+    ) external { revert("Unsupported"); }
+
+    function transferFrom(
+        address,
+        address,
+        uint256
+    ) external { revert("Unsupported"); }
+
+    function approve(address, uint256) external { revert("Unsupported"); }
+
+    function setApprovalForAll(address, bool) external {revert("Unsupported");}
+
+    function getApproved(uint256) external virtual view returns (address) { revert("Unsupported"); }
+
+    function isApprovedForAll(address, address) external view returns (bool) {revert("Unsupported"); }
+
 
     function _ownerOf(uint256 tokenId) internal view returns (address) {
         return owners[tokenId];

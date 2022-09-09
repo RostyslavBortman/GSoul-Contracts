@@ -72,7 +72,7 @@ contract Storage is Ownable {
 
     function getUserKarma(address user) external view returns (int256) {
         require(user != address(0), "Storage: Invalid address");
-        return users[msg.sender].karma; 
+        return users[user].karma; 
     }
 
     function _upvote(
