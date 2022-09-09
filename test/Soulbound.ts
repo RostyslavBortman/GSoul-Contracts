@@ -24,7 +24,7 @@ describe("Soulbound", function () {
     const chainId = await verifier.getChainId();
 
     const Soulbound = await ethers.getContractFactory("Soulbound");
-    const soulbound = await Soulbound.deploy(verifierAddress, "");
+    const soulbound = await Soulbound.deploy(verifierAddress);
     const { address: soulboundAddress } = soulbound;
 
     const params: Message = {

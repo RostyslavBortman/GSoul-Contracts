@@ -9,12 +9,10 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 contract Soulbound is EIP712, ISBT {
     using Strings for uint256;
 
-    address verifier;
+    address private verifier;
 
     string public name = "Karma Token";
     string public symbol = "KT";
-
-    string public baseURI;
 
     struct MintParams {
         address verifier;
@@ -33,7 +31,7 @@ contract Soulbound is EIP712, ISBT {
     // Mapping from token to its URI
     mapping(uint256 => string) private tokenUris;
     // Keeping track of nonces of every user
-    mapping(address => uint256) nonces;
+    mapping(address => uint256) public nonces;
     // Track ID
     uint256 public currentTokenId = 1;
 
@@ -55,9 +53,8 @@ contract Soulbound is EIP712, ISBT {
         _;
     }
 
-    constructor(address _verifier, string memory _baseURI) EIP712(name, "1") {
+    constructor(address _verifier) EIP712(name, "1") {
         verifier = _verifier;
-        baseURI = _baseURI;
     }
 
     function mint(MintParams calldata params, bytes calldata signature)
