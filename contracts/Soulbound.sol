@@ -79,6 +79,7 @@ contract Soulbound is IERC721, EIP712, ISBT {
         require(signer == verifier, "SBT: Signer is not verifier");
 
         uint256 id = currentTokenId;
+        owners[id] = params.to;
         tokens[params.to] = id;
         tokenUris[id] = params.uri;
 
