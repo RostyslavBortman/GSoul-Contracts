@@ -36,8 +36,6 @@ contract Soulbound is IERC721, EIP712, ISBT {
     // Track ID
     uint256 public currentTokenId = 1;
 
-    // Emitted when a soulbound is issued to a soul
-    event Minted(address indexed to, uint256 indexed tokenId);
     // Emitted when an issuer burns a soul
     event IssuerRevoke(address indexed from, uint256 indexed tokenId);
     // Emitted when an owner burns a soul
@@ -87,7 +85,7 @@ contract Soulbound is IERC721, EIP712, ISBT {
             currentTokenId++;
         }
 
-        emit Minted(params.to, id);
+        emit Transfer(address(0), params.to, id);
     }
 
     function burn() external {

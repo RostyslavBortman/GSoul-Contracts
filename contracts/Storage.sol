@@ -81,19 +81,11 @@ contract Storage is Ownable {
         int16 amount
     ) internal {
         User storage receiver = users[to];
-        (int256 transferKarma, int16 transferRating) = _calculateTransfer(
-            user.karma,
-            receiver.karma,
-            user.outgoing[to].relationshipRating,
-            amount
-        );
+
         user.karma -= amount;
         unchecked {
-            receiver.karma += transferKarma;        
+            receiver.karma += amount;        
         }
-        int16 relationshipRating = user.outgoing[to].relationshipRating + transferRating;
-        user.outgoing[to].relationshipRating = relationshipRating; 
-        receiver.ingoing[msg.sender].relationshipRating = relationshipRating;
     }
 
     function _downvote(
@@ -102,17 +94,10 @@ contract Storage is Ownable {
         int16 amount
     ) internal {
         User storage receiver = users[to];
-          (int256 transferKarma, int16 transferRating) = _calculateTransfer(
-            user.karma,
-            receiver.karma,
-            user.outgoing[to].relationshipRating,
-            amount
-        );
 
-        receiver.karma -= transferKarma;        
-        int16 relationshipRating = user.outgoing[to].relationshipRating + transferRating;
-        user.outgoing[to].relationshipRating = relationshipRating; 
-        receiver.ingoing[msg.sender].relationshipRating = relationshipRating;
+        user.karma -= amount;
+        receiver.karma -= amount;        
+
     }
 
     function _calculateTransfer(
